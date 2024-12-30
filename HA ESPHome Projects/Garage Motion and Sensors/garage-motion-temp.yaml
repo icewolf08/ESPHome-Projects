@@ -1,0 +1,87 @@
+esphome:
+  name: garage-motion-temp
+  project:
+    name: "Alex_Weisman.Climate_Occupancy_Sensor:_bme280_&_PIR"
+    version: "2.0"
+
+esp8266:
+  board: esp12e
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+
+ota:
+  password: "977768f8866ea8158cf2427e08118a11"
+  platform: "esphome"
+
+wifi:
+  ssid: icewolffoh
+  password: !secret wifi_password
+  fast_connect: True
+#  domain: .home.lan
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Garage-Motion-Temp"
+    password: "iF6QNW0MyaBB"
+
+captive_portal:
+    
+# I2C configuration entry for ESP32
+i2c:
+  sda: 4
+  scl: 5
+  scan: true
+
+#PIR Motion Sensor Configuration (Pin 13 = D7)
+binary_sensor:
+  - platform: gpio
+    pin: 13
+    name: "Garage Motion"
+    device_class: motion
+
+#BME280 Configuration @ 0x76
+sensor:
+  - platform: bme280_i2c
+    temperature:
+      name: "Garage Temperature"
+      oversampling: 16x
+      filters:
+        - offset: -4.0
+    pressure:
+      name: "Garage Pressure"
+      filters:
+        - lambda: return x*0.030;
+      unit_of_measurement: "inHg"
+    humidity:
+      name: "Garage Humidity"
+    address: 0x76
+#    update_interval: 60s
+
+#Monitor WiFi Signal Strength
+  - platform: wifi_signal # Reports the WiFi signal strength/RSSI in dB
+    name: "WiFi Signal dB"
+    id: wifi_signal_db
+    update_interval: 60s
+    entity_category: "diagnostic"
+
+  - platform: copy # Reports the WiFi signal strength in %
+    source_id: wifi_signal_db
+    name: "WiFi Signal Percent"
+    filters:
+      - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
+    unit_of_measurement: "Signal %"
+    entity_category: "diagnostic"
+
+#Monitor Uptime of ESP
+  - platform: uptime
+    name: Uptime Sensor
+    entity_category: "diagnostic"
+
+#Software Reboot Switch
+switch:
+  - platform: restart
+    name: "Office IAQ Sensor Restart"     

@@ -1,0 +1,131 @@
+esphome:
+  name: ha-dashboard-1
+  friendly_name: HA Dashboard 1
+  project:
+    name: "HA_Dashboard.smallTFT"
+    version: "1.0"
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "XlL7dbGt7mL1S2dc6BHIVL73PXlm1plydLDiHDfu48g="
+
+ota:
+  - platform: esphome
+    password: "2ed903c5eaa180bd97a84182dd1a9223"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Ha-Dashboard-1 Fallback Hotspot"
+    password: "8hXSZlSY4Shb"
+
+captive_portal:
+
+####// THE FOLLOWING SETUP CAME FROM: https://community.home-assistant.io/t/help-making-esp32-3248s035-work/748332/8  //###
+i2c:
+  sda: 33
+  scl: 32
+  scan: true
+  id: bus_a
+
+spi:
+  clk_pin: 14
+  mosi_pin: 13
+  miso_pin: 12
+
+light:
+  - platform: rgb
+    name: "Status Light"
+    red: red_GPIO
+    green: green_GPIO
+    blue: blue_GPIO
+  - platform: monochromatic
+    output: backlight_pin
+    name: "Display Backlight"
+    id: back_light
+    restore_mode: ALWAYS_ON
+
+output:
+#Status LED
+  - platform: ledc
+    pin: 4
+    id: red_GPIO
+    inverted: True
+  - platform: ledc
+    pin: 16
+    id: green_GPIO
+    inverted: True
+  - platform: ledc
+    pin: 17
+    id: blue_GPIO
+    inverted: True
+#LCD Backlight
+  - platform: ledc
+    pin: 27
+    id: backlight_pin
+
+
+display:
+  - platform: ili9xxx
+    id: my_display
+    model: ST7796
+    dc_pin: 2
+    cs_pin: 15
+    dimensions: 480x320
+    invert_colors: false
+    update_interval: never
+    auto_clear_enabled: false
+
+touchscreen:
+  platform: gt911
+  id: my_touch
+  update_interval: 50ms
+#  interrupt_pin: 21 # maybe not connected?
+#  reset_pin: 25 # From a openhasp config, appears to be the 'normal' esp32 reset pin?
+
+color:
+  - id: my_red
+    red: 100%
+    green: 0%
+    blue: 0%
+
+###// END COPIED CONFIGURATION //##
+
+#Sensor Configurations
+sensor:
+  #Monitor WiFi Signal Strength
+  - platform: wifi_signal # Reports the WiFi signal strength/RSSI in dB
+    name: "WiFi Signal dB"
+    id: wifi_signal_db
+    update_interval: 60s
+    entity_category: "diagnostic"
+
+  - platform: copy # Reports the WiFi signal strength in %
+    source_id: wifi_signal_db
+    name: "WiFi Signal Percent"
+    filters:
+      - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
+    unit_of_measurement: "Signal %"
+    entity_category: "diagnostic"
+
+#Monitor Uptime of ESP
+  - platform: uptime
+    name: Uptime Sensor
+    entity_category: "diagnostic"        
+
+#Switches Configurations
+switch:
+  - platform: restart
+    name: "Restart Dashboard"
